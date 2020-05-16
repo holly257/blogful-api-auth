@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 
 function makeUsersArray() {
   return [
@@ -228,7 +229,7 @@ function cleanTables(db) {
 function seedUsers(db, users) {
   const preppedUsers = users.map(user => ({
     ...user,
-    password: bcrypt.hashSync(user.password, 12)
+    password: bcrypt.hashSync(user.password, 1)
   }))
   return db.into('blogful_users').insert(preppedUsers)
     .then(() =>
@@ -270,9 +271,12 @@ function seedMaliciousArticle(db, user, article) {
     )
 }
 
-function makeAuthHeader(user) {
-  const token = Buffer.from(`${user.user_name}:${user.password}`).toString('base64')
-  return `Basic ${token}`
+function makeAuthHeader(user, secret = process.env.JWT_SECRET) {
+  const token = jwt.sign({ user_id: user.id }, secret, {
+    subject: user.user_name,
+    algorithm: 'HS256',
+  })
+  return ` Bearer ${token}`
 }
 
 module.exports = {
